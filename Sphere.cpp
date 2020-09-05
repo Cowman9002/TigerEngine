@@ -1,4 +1,4 @@
-#include "colliders.h"
+#include "TigerEngine/colliders.h"
 
 #include <algorithm>
 
@@ -92,6 +92,9 @@ namespace tgr
         case ColliderType::Plane:
             {
                 Plane *b = (Plane*)other;
+
+                res.hit = m3d::vec3::distance(b->nearestPoint(m_center), m_center) <= m_radius;
+
                 break;
             }
         case ColliderType::Triangle:
@@ -131,6 +134,6 @@ namespace tgr
 
     m3d::vec3 Sphere::nearestPoint(const m3d::vec3& point) const
     {
-        return (point - m_center).normalized() * m_radius;
+        return m_center + (point - m_center).normalized() * m_radius;
     }
 }

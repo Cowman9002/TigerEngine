@@ -1,4 +1,4 @@
-#include "colliders.h"
+#include "TigerEngine/colliders.h"
 
 #include <algorithm>
 
@@ -7,19 +7,19 @@ namespace tgr
     AABB::AABB() : AABB(m3d::vec3(), m3d::vec3()) {}
 
     AABB::AABB(const m3d::vec3& max_bounds, const m3d::vec3& min_bounds) :
-        Collider(ColliderType::AABB), max_bounds(max_bounds), min_bounds(min_bounds) {}
+        Collider(ColliderType::AABB), m_max(max_bounds), m_min(min_bounds) {}
 
     AABB& AABB::genFromPoints(const m3d::vec3 *points, unsigned long int num_points)
     {
         if(num_points < 1) return *this;
 
-        min_bounds = points[0];
-        max_bounds = points[0];
+        m_min = points[0];
+        m_max = points[0];
 
         for(unsigned i = 0; i < num_points; i++)
         {
-            min_bounds = m3d::vec3::min(min_bounds, points[i]);
-            max_bounds = m3d::vec3::max(max_bounds, points[i]);
+            m_min = m3d::vec3::min(m_min, points[i]);
+            m_max = m3d::vec3::max(m_max, points[i]);
         }
 
         return *this;
@@ -32,58 +32,58 @@ namespace tgr
 
     m3d::vec3 AABB::getCenter() const
     {
-        return (max_bounds + min_bounds) / 2.0;
+        return (m_max + m_min) / 2.0;
     }
 
     m3d::vec3 AABB::getExtents() const
     {
-        return (max_bounds - min_bounds) / 2.0;
+        return (m_max - m_min) / 2.0;
     }
 
-    m3d::vec3 AABB::getMaxBounds() const
+    m3d::vec3 AABB::getMax() const
     {
-        return max_bounds;
+        return m_max;
     }
 
-    m3d::vec3 AABB::getMinBounds() const
+    m3d::vec3 AABB::getMin() const
     {
-        return min_bounds;
+        return m_min;
     }
 
-    AABB& AABB::setMaxBounds(const m3d::vec3& new_max)
+    AABB& AABB::setMax(const m3d::vec3& new_max)
     {
-        max_bounds = new_max;
+        m_max = new_max;
 
         return *this;
     }
 
-    AABB& AABB::setMinBounds(const m3d::vec3& new_min)
+    AABB& AABB::setMin(const m3d::vec3& new_min)
     {
-        min_bounds = new_min;
+        m_min = new_min;
 
         return *this;
     }
 
     AABB& AABB::setCenterExtents(const m3d::vec3& center, const m3d::vec3& extents)
     {
-        max_bounds = center + extents;
-        min_bounds = center - extents;
+        m_max = center + extents;
+        m_min = center - extents;
 
         return *this;
     }
 
     AABB& AABB::normalize()
     {
-        min_bounds = m3d::vec3::min(min_bounds, max_bounds);
-        max_bounds = m3d::vec3::max(min_bounds, max_bounds);
+        m_min = m3d::vec3::min(m_min, m_max);
+        m_max = m3d::vec3::max(m_min, m_max);
 
         return *this;
     }
 
     AABB& AABB::translate(const m3d::vec3& translation)
     {
-        min_bounds += translation;
-        max_bounds += translation;
+        m_min += translation;
+        m_max += translation;
 
         return *this;
     }
@@ -98,9 +98,9 @@ namespace tgr
             {
                 AABB *b = (AABB*)other;
 
-                if(min_bounds.x <= b->getMaxBounds().x && max_bounds.x >= b->getMinBounds().x &&
-                        min_bounds.y <= b->getMaxBounds().y && max_bounds.y >= b->getMinBounds().y &&
-                        min_bounds.z <= b->getMaxBounds().z && max_bounds.z >= b->getMinBounds().z)
+                if(m_min.x <= b->getMax().x && m_max.x >= b->getMin().x &&
+                        m_min.y <= b->getMax().y && m_max.y >= b->getMin().y &&
+                        m_min.z <= b->getMax().z && m_max.z >= b->getMin().z)
                 {
                     res.hit = true;
                 }
@@ -118,6 +118,23 @@ namespace tgr
         case ColliderType::Plane:
             {
                 Plane *b = (Plane*)other;
+
+                // Convert AABB to center-extents representation
+                m3d::vec3 c = getCenter();
+                m3d::vec3 e = getExtents();
+
+                // Compute the projection interval radius of b onto L(t) = b.c + t * p.n
+                float r = m3d::vec3::dot(e, m3d::vec3(
+                                    std::abs(b->getNormal().x),
+                                    std::abs(b->getNormal().y),
+                                    std::abs(b->getNormal().z)));
+
+                // Compute distance of box center from plane
+                float s = m3d::vec3::dot(b->getNormal(), c) - b->getDistance();
+
+                // Intersection occurs when distance s falls within [-r,+r] interval
+                res.hit = std::abs(s) <= r;
+
                 break;
             }
         case ColliderType::Triangle:
@@ -157,6 +174,6 @@ namespace tgr
 
     m3d::vec3 AABB::nearestPoint(const m3d::vec3& point) const
     {
-        return m3d::vec3::max(min_bounds, m3d::vec3::min(point, max_bounds));
+        return m3d::vec3::max(m_min, m3d::vec3::min(point, m_max));
     }
 }

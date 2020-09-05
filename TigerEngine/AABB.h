@@ -9,8 +9,8 @@ namespace tgr
     class AABB : public Collider
     {
     private:
-        m3d::vec3 max_bounds;
-        m3d::vec3 min_bounds;
+        m3d::vec3 m_max;
+        m3d::vec3 m_min;
 
     public:
         AABB();
@@ -21,11 +21,11 @@ namespace tgr
 
         m3d::vec3 getCenter() const;
         m3d::vec3 getExtents() const;
-        m3d::vec3 getMaxBounds() const;
-        m3d::vec3 getMinBounds() const;
+        m3d::vec3 getMax() const;
+        m3d::vec3 getMin() const;
 
-        AABB& setMaxBounds(const m3d::vec3& new_max);
-        AABB& setMinBounds(const m3d::vec3& new_min);
+        AABB& setMax(const m3d::vec3& new_max);
+        AABB& setMin(const m3d::vec3& new_min);
         AABB& setCenterExtents(const m3d::vec3& center, const m3d::vec3& extents);
 
         // sets min and max bounds to min and max values of each
