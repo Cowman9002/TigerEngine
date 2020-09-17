@@ -85,7 +85,12 @@ namespace tgr
             {
                 Sphere *b = (Sphere*)other;
 
-                res.hit = m3d::vec3::distance(m_center, b->getCenter()) <= m_radius + b->getRadius();
+                float dist = m3d::vec3::distance(m_center, b->getCenter());
+                float sumr = m_radius + b->getRadius();
+
+                res.hit = dist <= sumr;
+                res.penetration = sumr - dist;
+                res.normal = (m_center - b->getCenter()).normalized();
 
                 break;
             }
