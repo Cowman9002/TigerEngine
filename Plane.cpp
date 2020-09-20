@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include <stdio.h>
+
 namespace tgr
 {
     Plane::Plane() : Plane(m3d::vec3(), 0.0f) {}
@@ -59,12 +61,17 @@ namespace tgr
             {
                 AABB *b = (AABB*)other;
                 res = b->checkCollision(this);
+
+                res.normal *= -1.0f;
+
                 break;
             }
         case ColliderType::Sphere:
             {
                 Sphere *b = (Sphere*)other;
                 res = b->checkCollision(this);
+                res.normal *= -1.0f;
+
                 break;
             }
         case ColliderType::Plane:
@@ -74,7 +81,10 @@ namespace tgr
                 // cross means the length nears zero the closer the values are together
                 m3d::vec3 d = m3d::vec3::cross(b->getNormal(), m_normal);
                 // check if planes are parallel, if not, they collide
-                res.hit = d.lengthSqr() > 0.0001f;
+                if(d.lengthSqr() > 0.0001f)
+                {
+                    res.hit = true;
+                }
 
                 break;
             }
@@ -96,6 +106,14 @@ namespace tgr
         case ColliderType::Point:
             {
                 Point *b = (Point*)other;
+
+                float dist = distanceFrom(b->getPoint());
+
+                if(std::abs(dist) < 0.001f)
+                {
+                    res.hit = true;
+                }
+
                 break;
             }
         case ColliderType::Line:

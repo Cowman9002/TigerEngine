@@ -103,6 +103,28 @@ namespace tgr
                         m_min.z <= b->getMax().z && m_max.z >= b->getMin().z)
                 {
                     res.hit = true;
+
+                    //TODO: clean this up
+                    m3d::vec3 case_a = m_max - b->getMin();
+                    m3d::vec3 case_b = b->getMax() - m_min;
+
+                    m3d::vec3 min_axis = m3d::vec3::min(case_a, case_b);
+
+                    if(min_axis.x < min_axis.y && min_axis.x < min_axis.z)
+                    {
+                        res.normal = m3d::vec3(min_axis.x == case_a.x ? -1.0f : 1.0f, 0.0f, 0.0f);
+                        res.penetration = min_axis.x;
+                    }
+                    else if(min_axis.y < min_axis.z)
+                    {
+                        res.normal = m3d::vec3(0.0f, min_axis.y == case_a.y ? -1.0f : 1.0f, 0.0f);
+                        res.penetration = min_axis.y;
+                    }
+                    else
+                    {
+                        res.normal = m3d::vec3(0.0f, 0.0f, min_axis.z == case_a.z ? -1.0f : 1.0f);
+                        res.penetration = min_axis.z;
+                    }
                 }
 
                 break;
@@ -111,7 +133,17 @@ namespace tgr
             {
                 Sphere *b = (Sphere*)other;
 
-                res.hit = m3d::vec3::distance(nearestPoint(b->getCenter()), b->getCenter()) <= b->getRadius();
+                m3d::vec3 near = nearestPoint(b->getCenter());
+                float dist = m3d::vec3::distance(near, b->getCenter());
+
+                if(dist <= b->getRadius())
+                {
+                    res.hit = true;
+
+                    res.point = near;
+                    res.penetration = b->getRadius() - dist;
+                    res.normal = (near - b->getCenter()).normalized();
+                }
 
                 break;
             }
@@ -133,7 +165,11 @@ namespace tgr
                 float s = m3d::vec3::dot(b->getNormal(), c) - b->getDistance();
 
                 // Intersection occurs when distance s falls within [-r,+r] interval
-                res.hit = std::abs(s) <= r;
+
+                if(std::abs(s) <= r)
+                {
+                    res.hit = true;
+                }
 
                 break;
             }

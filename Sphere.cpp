@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include <stdio.h>
+
 namespace tgr
 {
     Sphere::Sphere() : Sphere(m3d::vec3(), 0.0f) {}
@@ -78,6 +80,7 @@ namespace tgr
                 AABB *b = (AABB*)other;
 
                 res = b->checkCollision(this);
+                res.normal *= -1.0f;
 
                 break;
             }
@@ -88,9 +91,12 @@ namespace tgr
                 float dist = m3d::vec3::distance(m_center, b->getCenter());
                 float sumr = m_radius + b->getRadius();
 
-                res.hit = dist <= sumr;
-                res.penetration = sumr - dist;
-                res.normal = (m_center - b->getCenter()).normalized();
+                if(dist <= sumr)
+                {
+                    res.hit = true;
+                    res.penetration = sumr - dist;
+                    res.normal = (m_center - b->getCenter()).normalized();
+                }
 
                 break;
             }
@@ -98,13 +104,29 @@ namespace tgr
             {
                 Plane *b = (Plane*)other;
 
-                res.hit = m3d::vec3::distance(b->nearestPoint(m_center), m_center) <= m_radius;
+                if(m3d::vec3::distance(b->nearestPoint(m_center), m_center) <= m_radius)
+                {
+                    res.hit = true;
+                }
 
                 break;
             }
         case ColliderType::Triangle:
             {
                 Triangle *b = (Triangle*)other;
+
+                m3d::vec3 near = b->nearestPoint(m_center);
+                float dist = m3d::vec3::distance(near, m_center);
+
+                if(dist <= m_radius)
+                {
+                    res.hit = true;
+                    res.penetration = m_radius - dist;
+                    res.normal = m3d::vec3::cross(b->getPoint(1) - b->getPoint(0),
+                                                  b->getPoint(2) - b->getPoint(0)).normalized();
+
+                }
+
                 break;
             }
         case ColliderType::OBB:
